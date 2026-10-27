@@ -1,0 +1,113 @@
+parameters:
+- name: pool
+  type: string
+  default: '1es-pool-azfunc'
+
+jobs:
+  - job: Build
+    displayName: 'Build'
+
+    pool:
+      name: ${{ parameters.pool }}
+      image: 1es-ubuntu-22.04
+      os: linux
+
+    variables:
+      NODE_VERSION: '20.x'
+
+    templateContext:
+      outputParentDirectory: $(Build.ArtifactStagingDirectory)
+      outputs:
+        - output: pipelineArtifact
+          displayName: 'Publish npm debug logs'
+          targetPath: $(Build.ArtifactStagingDirectory)/npm-logs
+          condition: failed()
+
+    steps:
+    - checkout: self
+
+    - task: UseNode@1
+      inputs:
+        version: ${{ variables.NODE_VERSION }}
+      displayName: 'Setup Node'
+
+    - task: npmAuthenticate@0
+      inputs:
+        workingFile: '$(Build.SourcesDirectory)/.npmrc'
+      displayName: 'Authenticate npm'
+
+    - task: Npm@1
+      inputs:
+        command: 'install'
+      displayName: 'Install dependencies'
+
+    - pwsh: |
+        $logDir = Join-Path $HOME '.npm/_logs'
+        $artifactDir = Join-Path '$(Build.ArtifactStagingDirectory)' 'npm-logs'
+
+        Write-Host "NPM log directory: $logDir"
+
+        if (Test-Path $logDir) {
+          New-Item -ItemType Directory -Force -Path $artifactDir | Out-Null
+
+          Get-ChildItem $logDir -Filter '*-debug-0.log' |
+            Sort-Object LastWriteTime -Descending |
+            Select-Object -First 1 |
+            ForEach-Object {
+              Copy-Item $_.FullName -Destination $artifactDir -Force
+              Write-Host "--- Latest npm debug log: $($_.FullName) ---"
+              Get-Content $_.FullName -Tail 200
+            }
+        } else {
+          Write-Host 'No npm log directory was found on the agent.'
+        }
+      displayName: 'Dump npm debug log on failure'
+      condition: failed()
+
+    - task: Npm@1
+      inputs:
+        command: 'custom'
+        customCommand: 'run build'
+      displayName: 'Build'
+
+    - task: JavaToolInstaller@0
+      inputs:
+        versionSpec: '8'
+        jdkArchitectureOption: 'x64'
+        jdkSourceOption: 'PreInstalled'
+      displayName: 'Install JDK 8'
+
+    # Maven resolves plugins before applying the POM's repositories. Install the CFS mirror
+    # first, then let MavenAuthenticate add credentials for its upstream-public mirror ID.
+    - pwsh: |
+        $m2 = Join-Path $HOME '.m2'
+        New-Item -ItemType Directory -Path $m2 -Force | Out-Null
+        Copy-Item '$(Build.SourcesDirectory)/settings.xml' (Join-Path $m2 'settings.xml') -Force
+      displayName: 'Install Maven settings.xml'
+
+    - task: MavenAuthenticate@0
+      displayName: 'Authenticate Maven feed'
+      inputs:
+        artifactsFeeds: upstream-public
+
+    - task: Maven@3
+      inputs:
+        mavenPomFile: 'tests/e2e/java8/pom.xml'
+        goals: 'clean package azure-functions:package'
+      displayName: 'Build project for java language'
+
+    - task: UseDotNet@2
+      displayName: 'Use .NET Core sdk'
+      inputs:
+        packageType: sdk
+        version: 8.0.x
+
+    - task: NuGetAuthenticate@1
+      displayName: 'Authenticate NuGet'
+
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'build'
+        projects: 'tests/e2e/dotnet8/*.csproj'
+        arguments: '/p:RestoreConfigFile="$(Build.SourcesDirectory)/NuGet.config"'
+      displayName: 'Build project for csharp language'

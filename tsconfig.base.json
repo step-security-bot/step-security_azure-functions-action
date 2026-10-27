@@ -1,0 +1,18 @@
+{
+    "compilerOptions": {
+        "target": "es6",
+        "module": "commonjs",
+        "rootDir": "./src",
+        "outDir": "./lib",
+        "esModuleInterop": true,
+        "strict": false,
+        "strictFunctionTypes": true,
+        "noImplicitAny" : true,
+        "noUnusedParameters": true,
+        "types": [
+            "mocha"
+        ]
+    },
+    "include": ["src/**/*"],
+    "exclude": ["node_modules", "**/*.spec.ts"]
+}
