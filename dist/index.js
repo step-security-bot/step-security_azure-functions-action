@@ -2823,6 +2823,19 @@ const KuduServiceUtility_1 = __nccwpck_require__(61721);
 const utils_1 = __nccwpck_require__(71750);
 const runtime_stack_1 = __nccwpck_require__(64905);
 const state_1 = __nccwpck_require__(39307);
+// Values of these settings are safe to print; any other value may be a secret
+const DEBUG_VISIBLE_SETTINGS = [
+    'sku',
+    'FUNCTIONS_WORKER_RUNTIME',
+    'ENABLE_ORYX_BUILD',
+    'SCM_DO_BUILD_DURING_DEPLOYMENT'
+];
+function debugSettings(settings) {
+    for (const key in settings) {
+        const value = DEBUG_VISIBLE_SETTINGS.includes(key) ? settings[key] : '***';
+        utils_1.Logger.Debug(`- ${key} = ${value}`);
+    }
+}
 class ResourceValidator {
     invoke(state, params, context) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -2916,9 +2929,7 @@ class ResourceValidator {
                 throw new exceptions_1.AzureResourceError(state, 'Get Function App SKU', 'Function app sku should not be empty');
             }
             utils_1.Logger.Info('Successfully acquired site configs from function app!');
-            for (const key in configSettings.properties) {
-                utils_1.Logger.Debug(`- ${key} = ${configSettings.properties[key]}`);
-            }
+            debugSettings(configSettings.properties);
             const result = function_sku_1.FunctionSkuUtil.FromString(configSettings.properties.sku);
             utils_1.Logger.Info(`Detected function app sku: ${function_sku_1.FunctionSkuConstant[result]}`);
             return result;
@@ -2946,9 +2957,7 @@ class ResourceValidator {
                 console.log(`::add-mask::${appSettings.properties['AzureWebJobsStorage']}`);
             }
             utils_1.Logger.Info('Successfully acquired app settings from function app (RBAC)!');
-            for (const key in appSettings.properties) {
-                utils_1.Logger.Debug(`- ${key} = ${appSettings.properties[key]}`);
-            }
+            debugSettings(appSettings.properties);
             const result = {
                 AzureWebJobsStorage: appSettings.properties['AzureWebJobsStorage'],
                 AzureWebJobsStorage__accountName: appSettings.properties['AzureWebJobsStorage__accountName'],
@@ -2984,9 +2993,7 @@ class ResourceValidator {
                 console.log(`::add-mask::${appSettings['AzureWebJobsStorage']}`);
             }
             utils_1.Logger.Info('Successfully acquired app settings from function app (with SCM credential)!');
-            for (const key in appSettings) {
-                utils_1.Logger.Debug(`- ${key} = ${appSettings[key]}`);
-            }
+            debugSettings(appSettings);
             const result = {
                 AzureWebJobsStorage: appSettings['AzureWebJobsStorage'],
                 AzureWebJobsStorage__accountName: appSettings['AzureWebJobsStorage__accountName'],

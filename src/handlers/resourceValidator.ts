@@ -20,6 +20,21 @@ import { Logger } from '../utils';
 import { RuntimeStackConstant } from '../constants/runtime_stack';
 import { StateConstant } from '../constants/state';
 
+// Values of these settings are safe to print; any other value may be a secret
+const DEBUG_VISIBLE_SETTINGS = [
+    'sku',
+    'FUNCTIONS_WORKER_RUNTIME',
+    'ENABLE_ORYX_BUILD',
+    'SCM_DO_BUILD_DURING_DEPLOYMENT'
+];
+
+function debugSettings(settings: { [key: string]: any }): void {
+    for (const key in settings) {
+        const value = DEBUG_VISIBLE_SETTINGS.includes(key) ? settings[key] : '***';
+        Logger.Debug(`- ${key} = ${value}`);
+    }
+}
+
 export class ResourceValidator implements IOrchestratable {
     private _resourceGroupName: string;
     private _isLinux: boolean;
@@ -125,9 +140,7 @@ export class ResourceValidator implements IOrchestratable {
         }
 
         Logger.Info('Successfully acquired site configs from function app!');
-        for (const key in configSettings.properties) {
-            Logger.Debug(`- ${key} = ${configSettings.properties[key]}`);
-        }
+        debugSettings(configSettings.properties);
 
         const result: FunctionSkuConstant = FunctionSkuUtil.FromString(configSettings.properties.sku);
         Logger.Info(`Detected function app sku: ${FunctionSkuConstant[result]}`);
@@ -164,9 +177,7 @@ export class ResourceValidator implements IOrchestratable {
         }
 
         Logger.Info('Successfully acquired app settings from function app (RBAC)!');
-        for (const key in appSettings.properties) {
-            Logger.Debug(`- ${key} = ${appSettings.properties[key]}`);
-        }
+        debugSettings(appSettings.properties);
 
         const result: IAppSettings = {
             AzureWebJobsStorage: appSettings.properties['AzureWebJobsStorage'],
@@ -211,9 +222,7 @@ export class ResourceValidator implements IOrchestratable {
         }
 
         Logger.Info('Successfully acquired app settings from function app (with SCM credential)!');
-        for (const key in appSettings) {
-            Logger.Debug(`- ${key} = ${appSettings[key]}`);
-        }
+        debugSettings(appSettings);
 
         const result: IAppSettings = {
             AzureWebJobsStorage: appSettings['AzureWebJobsStorage'],
