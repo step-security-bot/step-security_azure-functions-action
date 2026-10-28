@@ -1,0 +1,56 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: daily
+
+  - package-ecosystem: nuget
+    directory: /tests/e2e/dotnet8
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /tests/e2e/node20
+    schedule:
+      interval: daily
+
+  - package-ecosystem: pip
+    directory: /tests/e2e/python310
+    schedule:
+      interval: daily
+
+  - package-ecosystem: nuget
+    directory: /tests/samples/NetCoreAppFolder
+    schedule:
+      interval: daily
+
+  - package-ecosystem: pip
+    directory: /tests/samples/PythonAppFolder
+    schedule:
+      interval: daily
+
+  - package-ecosystem: pip
+    directory: /tests/samples/PythonAppFuncignoreFolder
+    schedule:
+      interval: daily
+
+  - package-ecosystem: maven
+    directory: /tests/e2e/java8
+    schedule:
+      interval: daily
+
+  - package-ecosystem: maven
+    directory: /tests/samples/BrokenJavaAppFolder
+    schedule:
+      interval: daily
+
+  - package-ecosystem: maven
+    directory: /tests/samples/JavaAppFolder
+    schedule:
+      interval: daily
